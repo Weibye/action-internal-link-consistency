@@ -46,6 +46,6 @@ export class Setup {
             }
         }
 
-        this.Config = new Config(source, fileTypes, excludeFolders, excludeFiles, targets);
+        this.Config = new Config(source, targets, fileTypes, excludeFolders, excludeFiles);
     }
 }

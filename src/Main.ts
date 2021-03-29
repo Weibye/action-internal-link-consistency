@@ -3,8 +3,8 @@ import * as core from '@actions/core';
 // const github = require('@actions/github');
 import { Setup } from './Setup';
 import { FileDetails } from './FileDetails';
-import { GetSourceData } from './SourceData';
-import { GetTargetData } from './TargetData';
+import { SourceDataCollector } from './DataCollection/SourceData';
+import { GetTargetData } from './DataCollection/TargetData';
 import { ITargetOutput } from './Interfaces';
 import { CrossReferencer } from './CrossReferencer';
 import { IssueLogger } from './IssueLogger';
@@ -17,7 +17,7 @@ async function run(): Promise<void> {
         console.log(`Running job with config: \n${config.ToString()}`);
 
         console.log('======= Getting source data =======');
-        const sourceData: FileDetails[] = GetSourceData(config.Source, config);
+        const sourceData: FileDetails[] = new SourceDataCollector(config).FileDetails;
         if (sourceData.length > 0) {
             console.log(`Found ${sourceData.length} entries in ${config.Source}`);
         } else {
