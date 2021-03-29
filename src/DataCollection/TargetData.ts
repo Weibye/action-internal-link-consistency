@@ -1,9 +1,9 @@
-import { Config } from './Config';
-import { FileDetails } from './FileDetails';
-import { ExcludeFile } from './InclusionController';
-import { ITarget, ITargetData } from './Interfaces';
-import { ReadFileFromPath } from './IoOperations';
-import { LinkStyle } from './LinkStyle';
+import { Config } from '../Config';
+import { FileDetails } from '../FileDetails';
+import { ExcludeFile } from '../InclusionController';
+import { ITarget, ITargetData } from '../Interfaces';
+import { ReadFileFromPath } from '../IoOperations';
+import { LinkStyle } from '../LinkStyle';
 // import { RegExpMatchArray } from 'RegExp'
 
 export function GetTargetData(target: ITarget, config: Config): ITargetData[] {
