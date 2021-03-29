@@ -399,12 +399,29 @@ exports.toCommandValue = toCommandValue;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Config = void 0;
 class Config {
-    constructor(source, whitelistFileTypes, excludeFolders, excludeFiles, targets) {
+    constructor(source, targets, fileTypes, excludeFolders, excludeFiles) {
+        this.PathValidation(source);
         this.Source = source;
-        this.WhitelistFileTypes = whitelistFileTypes;
-        this.ExcludeFolders = excludeFolders;
-        this.ExcludeFiles = excludeFiles;
         this.Targets = targets;
+        if (fileTypes === undefined) {
+            this.FileTypes = [];
+        }
+        else {
+            this.FileTypeValidation(fileTypes);
+            this.FileTypes = fileTypes;
+        }
+        if (excludeFolders === undefined) {
+            this.ExcludeFolders = [];
+        }
+        else {
+            this.ExcludeFolders = excludeFolders;
+        }
+        if (excludeFiles === undefined) {
+            this.ExcludeFiles = [];
+        }
+        else {
+            this.ExcludeFiles = excludeFiles;
+        }
     }
     /**
      * ToString
@@ -412,13 +429,38 @@ class Config {
     ToString() {
         let output = '';
         output += `\tSource: ${this.Source}\n`;
-        output += `\tFileTypes: ${this.WhitelistFileTypes}\n`;
+        output += `\tFileTypes: ${this.FileTypes}\n`;
         output += `\tExcludeFolders: ${this.ExcludeFolders}\n`;
         output += `\tExcludeFiles: ${this.ExcludeFiles}\n`;
         for (const target of this.Targets) {
             output += `\tTarget: ${target.Path} | ${target.Style}\n`;
         }
         return output;
+    }
+    PathValidation(source) {
+        if (source === '' || source === null || source === undefined) {
+            throw new Error('Path must be a valid string');
+        }
+        // must start with ./
+        const startOfLine = /^\.\//gm;
+        if (startOfLine.exec(source) === null) {
+            throw new Error('Path must start with ./');
+        }
+        // must end with /
+        const endOfLine = /.*\/$/gm;
+        if (endOfLine.exec(source) === null) {
+            throw new Error('Path must end with /');
+        }
+    }
+    FileTypeValidation(fileTypes) {
+        if (fileTypes === null || fileTypes === undefined) {
+            throw new Error('FileTypes must be a valid array');
+        }
+        for (const fileType of fileTypes) {
+            if (fileType === undefined || fileType === null || fileType === '') {
+                throw new Error('Filetype not a valid string');
+            }
+        }
     }
 }
 exports.Config = Config;
@@ -479,6 +521,144 @@ class CrossReferencer {
     }
 }
 exports.CrossReferencer = CrossReferencer;
+
+
+/***/ }),
+
+/***/ 79:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.SourceDataCollector = void 0;
+const fs_1 = __nccwpck_require__(747);
+const FileDetails_1 = __nccwpck_require__(8);
+const InclusionController_1 = __nccwpck_require__(758);
+class SourceDataCollector {
+    constructor(config) {
+        this.FileDetails = this.GetSourceData(config.Source, config);
+    }
+    GetSourceData(path, config) {
+        let files = [];
+        const dirs = fs_1.readdirSync(path, { withFileTypes: true });
+        for (const element of dirs) {
+            if (element.isDirectory()) {
+                if (InclusionController_1.IncludeFolder(path + element.name, config)) {
+                    files = files.concat(this.GetSourceData(`${path}${element.name}/`, config));
+                }
+                else {
+                    // console.log(`Folder excluded: ${path}${element.name}`);
+                }
+            }
+            else {
+                const fileDetails = new FileDetails_1.FileDetails(path + element.name);
+                // Only check files that are whitelisted and not excluded
+                if (InclusionController_1.IncludeFile(fileDetails, config)) {
+                    files.push(fileDetails);
+                }
+            }
+        }
+        return files;
+    }
+}
+exports.SourceDataCollector = SourceDataCollector;
+
+
+/***/ }),
+
+/***/ 416:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.GetTargetData = void 0;
+const FileDetails_1 = __nccwpck_require__(8);
+const InclusionController_1 = __nccwpck_require__(758);
+const IoOperations_1 = __nccwpck_require__(535);
+const LinkStyle_1 = __nccwpck_require__(894);
+// import { RegExpMatchArray } from 'RegExp'
+function GetTargetData(target, config) {
+    // console.log(`Getting data from: ${target.Path}`);
+    const output = [];
+    // Read the contents of the file
+    const content = IoOperations_1.ReadFileFromPath(target.Path);
+    if (content.length <= 0)
+        return [];
+    let pattern;
+    let matches;
+    const preProcessor = [];
+    switch (target.Style) {
+        case LinkStyle_1.LinkStyle.Markdown:
+            pattern = /^(?!<!--).*\[([^[]+)\]\(([^)]+)\)/gm;
+            matches = content.matchAll(pattern);
+            for (const match of matches) {
+                if (match.index === undefined) {
+                    console.warn('Could not index of match. Something is wrong somewhere');
+                }
+                else {
+                    preProcessor.push({ Orig: match[0], Link: match[2], Target: target, Line: GetLineNr(content, match.index) });
+                }
+            }
+            break;
+        case LinkStyle_1.LinkStyle.TOML_Path_Value:
+            pattern = /^(?!#).*path\s=\s"(.*)"$/gm;
+            matches = content.matchAll(pattern);
+            for (const match of matches) {
+                if (match.index === undefined) {
+                    console.warn('Could not index of match. Something is wrong somewhere');
+                }
+                else {
+                    preProcessor.push({ Orig: match[0], Link: match[1], Target: target, Line: GetLineNr(content, match.index) });
+                }
+            }
+            break;
+        default:
+            throw new Error('No Style defined');
+    }
+    for (const data of preProcessor) {
+        if (!ExcludeLink(data.Link)) {
+            const rootPath = GetRootPath(data.Target.Path, data.Link);
+            if (!InclusionController_1.ExcludeFile(rootPath, config.ExcludeFiles, config.ExcludeFolders)) {
+                output.push({
+                    Details: new FileDetails_1.FileDetails(rootPath),
+                    RelativePath: data.Link,
+                    OriginalMatch: data.Orig,
+                    ParentFile: data.Target,
+                    LineNr: data.Line
+                });
+            }
+        }
+    }
+    return output;
+}
+exports.GetTargetData = GetTargetData;
+function ExcludeLink(link) {
+    // Exclude comments
+    const tomlComment = /^#/gm;
+    const tomlRes = tomlComment.exec(link);
+    if (tomlRes !== null)
+        return true;
+    // Exclude external links
+    const webLinks = /^https*:\/\//gm;
+    const webResult = webLinks.exec(link);
+    if (webResult !== null)
+        return true;
+    return false;
+}
+function GetLineNr(content, charIndex) {
+    const subString = content.substring(0, charIndex);
+    return subString.split('\n').length;
+}
+function GetRootPath(targetPath, filePath) {
+    // Source goes from root -> document
+    // Target goes from document -> file
+    const targetPattern = /^(.+\/)/gm;
+    const rootToTarget = Array.from(targetPath.matchAll(targetPattern))[0][1];
+    // If prefixed with './' remove it.
+    const filePattern = /^(.\/)*(.*)$/gm;
+    const TargetToFile = Array.from(filePath.matchAll(filePattern))[0][2];
+    return `${rootToTarget}${TargetToFile}`;
+}
 
 
 /***/ }),
@@ -558,7 +738,7 @@ exports.FileDetails = FileDetails;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ExcludeFile = exports.IncludeFolder = exports.IncludeFile = void 0;
 function IncludeFile(fileDetails, config) {
-    return !ExcludeFile(fileDetails.SourcePath, config.ExcludeFiles, config.ExcludeFolders) && WhitelistedType(fileDetails.Extension, config.WhitelistFileTypes);
+    return !ExcludeFile(fileDetails.SourcePath, config.ExcludeFiles, config.ExcludeFolders) && WhitelistedType(fileDetails.Extension, config.FileTypes);
 }
 exports.IncludeFile = IncludeFile;
 function IncludeFolder(path, config) {
@@ -763,8 +943,8 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(186));
 // const github = require('@actions/github');
 const Setup_1 = __nccwpck_require__(490);
-const SourceData_1 = __nccwpck_require__(989);
-const TargetData_1 = __nccwpck_require__(430);
+const SourceData_1 = __nccwpck_require__(79);
+const TargetData_1 = __nccwpck_require__(416);
 const CrossReferencer_1 = __nccwpck_require__(252);
 const IssueLogger_1 = __nccwpck_require__(686);
 function run() {
@@ -774,7 +954,7 @@ function run() {
             const config = new Setup_1.Setup().Config;
             console.log(`Running job with config: \n${config.ToString()}`);
             console.log('======= Getting source data =======');
-            const sourceData = SourceData_1.GetSourceData(config.Source, config);
+            const sourceData = new SourceData_1.SourceDataCollector(config).FileDetails;
             if (sourceData.length > 0) {
                 console.log(`Found ${sourceData.length} entries in ${config.Source}`);
             }
@@ -874,143 +1054,10 @@ class Setup {
                 process.exit(1);
             }
         }
-        this.Config = new Config_1.Config(source, fileTypes, excludeFolders, excludeFiles, targets);
+        this.Config = new Config_1.Config(source, targets, fileTypes, excludeFolders, excludeFiles);
     }
 }
 exports.Setup = Setup;
-
-
-/***/ }),
-
-/***/ 989:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.GetSourceData = void 0;
-const fs_1 = __nccwpck_require__(747);
-const FileDetails_1 = __nccwpck_require__(8);
-const InclusionController_1 = __nccwpck_require__(758);
-function GetSourceData(path, config) {
-    let files = [];
-    const dirs = fs_1.readdirSync(path, { withFileTypes: true });
-    for (const element of dirs) {
-        if (element.isDirectory()) {
-            if (InclusionController_1.IncludeFolder(path + element.name, config)) {
-                files = files.concat(GetSourceData(`${path}${element.name}/`, config));
-            }
-            else {
-                // console.log(`Folder excluded: ${path}${element.name}`);
-            }
-        }
-        else {
-            const fileDetails = new FileDetails_1.FileDetails(path + element.name);
-            // Only check files that are whitelisted and not excluded
-            if (InclusionController_1.IncludeFile(fileDetails, config)) {
-                files.push(fileDetails);
-            }
-        }
-    }
-    return files;
-}
-exports.GetSourceData = GetSourceData;
-
-
-/***/ }),
-
-/***/ 430:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.GetTargetData = void 0;
-const FileDetails_1 = __nccwpck_require__(8);
-const InclusionController_1 = __nccwpck_require__(758);
-const IoOperations_1 = __nccwpck_require__(535);
-const LinkStyle_1 = __nccwpck_require__(894);
-// import { RegExpMatchArray } from 'RegExp'
-function GetTargetData(target, config) {
-    // console.log(`Getting data from: ${target.Path}`);
-    const output = [];
-    // Read the contents of the file
-    const content = IoOperations_1.ReadFileFromPath(target.Path);
-    if (content.length <= 0)
-        return [];
-    let pattern;
-    let matches;
-    const preProcessor = [];
-    switch (target.Style) {
-        case LinkStyle_1.LinkStyle.Markdown:
-            pattern = /^(?!<!--).*\[([^[]+)\]\(([^)]+)\)/gm;
-            matches = content.matchAll(pattern);
-            for (const match of matches) {
-                if (match.index === undefined) {
-                    console.warn('Could not index of match. Something is wrong somewhere');
-                }
-                else {
-                    preProcessor.push({ Orig: match[0], Link: match[2], Target: target, Line: GetLineNr(content, match.index) });
-                }
-            }
-            break;
-        case LinkStyle_1.LinkStyle.TOML_Path_Value:
-            pattern = /^(?!#).*path\s=\s"(.*)"$/gm;
-            matches = content.matchAll(pattern);
-            for (const match of matches) {
-                if (match.index === undefined) {
-                    console.warn('Could not index of match. Something is wrong somewhere');
-                }
-                else {
-                    preProcessor.push({ Orig: match[0], Link: match[1], Target: target, Line: GetLineNr(content, match.index) });
-                }
-            }
-            break;
-        default:
-            throw new Error('No Style defined');
-    }
-    for (const data of preProcessor) {
-        if (!ExcludeLink(data.Link)) {
-            const rootPath = GetRootPath(data.Target.Path, data.Link);
-            if (!InclusionController_1.ExcludeFile(rootPath, config.ExcludeFiles, config.ExcludeFolders)) {
-                output.push({
-                    Details: new FileDetails_1.FileDetails(rootPath),
-                    RelativePath: data.Link,
-                    OriginalMatch: data.Orig,
-                    ParentFile: data.Target,
-                    LineNr: data.Line
-                });
-            }
-        }
-    }
-    return output;
-}
-exports.GetTargetData = GetTargetData;
-function ExcludeLink(link) {
-    // Exclude comments
-    const tomlComment = /^#/gm;
-    const tomlRes = tomlComment.exec(link);
-    if (tomlRes !== null)
-        return true;
-    // Exclude external links
-    const webLinks = /^https*:\/\//gm;
-    const webResult = webLinks.exec(link);
-    if (webResult !== null)
-        return true;
-    return false;
-}
-function GetLineNr(content, charIndex) {
-    const subString = content.substring(0, charIndex);
-    return subString.split('\n').length;
-}
-function GetRootPath(targetPath, filePath) {
-    // Source goes from root -> document
-    // Target goes from document -> file
-    const targetPattern = /^(.+\/)/gm;
-    const rootToTarget = Array.from(targetPath.matchAll(targetPattern))[0][1];
-    // If prefixed with './' remove it.
-    const filePattern = /^(.\/)*(.*)$/gm;
-    const TargetToFile = Array.from(filePath.matchAll(filePattern))[0][2];
-    return `${rootToTarget}${TargetToFile}`;
-}
 
 
 /***/ }),
