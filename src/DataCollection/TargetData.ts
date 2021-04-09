@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs';
+// import { readFileSync } from 'fs';
 import { Config } from '../Config';
 import { FileDetails } from '../FileDetails';
 import { ExcludeFile } from '../InclusionController';
@@ -8,13 +8,8 @@ import { ReadFileFromPath } from '../IoOperations';
 export class TargetDataCollector {
     public TargetData: ITargetOutput[];
 
-    private supportedFiles;
-
     public constructor(config: Config) {
         this.TargetData = [];
-
-        const content = readFileSync('./src/SupportedFormats.json', { encoding: 'utf8' });
-        this.supportedFiles = JSON.parse(content);
 
         for (const target of config.Targets) {
             const data = this.GetTargetData(target, config);
@@ -25,9 +20,9 @@ export class TargetDataCollector {
         }
     }
 
-    public static ReadTarget(path: string): string {
-        return readFileSync(path, { encoding: 'utf8' });
-    }
+    // public static ReadTarget(path: string): string {
+    //     return readFileSync(path, { encoding: 'utf8' });
+    // }
 
     private GetTargetData(target: ITarget, config: Config): ITargetData[] {
         // console.log(`Getting data from: ${target.Path}`);

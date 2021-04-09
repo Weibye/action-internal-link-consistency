@@ -5,6 +5,6 @@ export function IsValidPath(path: string): boolean {
 }
 
 export function ReadFileFromPath(path: string): string {
-    const content: string = readFileSync(path, { encoding: 'utf8' });
-    return content; // JSON.stringify(content);
+    if (!existsSync(path)) throw new Error('Invalid Path');
+    return readFileSync(path, { encoding: 'utf8' });
 }

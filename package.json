@@ -12,7 +12,7 @@
         "package": "npx ncc build src/Main.ts --source-map --license licenses.txt",
         "test": "jest",
         "test:dev": "nodemon --watch __tests__ -e ts --exec \"npm run test\"",
-        "all": "npm run format && npm run lint && npm run test && npm run package",
+        "all": "npm run format && npm run lint && npm run test && npm run package && npm run start",
         "dev": "nodemon --watch src -e ts,ejs --exec \"npm run package && npm run start\"",
         "start": "node ."
     },
