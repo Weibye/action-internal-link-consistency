@@ -594,7 +594,7 @@ const InclusionController_1 = __nccwpck_require__(758);
 class SourceDataCollector {
     constructor(config) {
         this.FileDetails = this.GetSourceData(config.Source, config);
-        console.log(`Found ${this.FileDetails.length} entries in ${config.Source}`);
+        // console.log(`Found ${this.FileDetails.length} entries in ${config.Source}`);
     }
     GetSourceData(path, config) {
         let files = [];

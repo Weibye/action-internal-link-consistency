@@ -8,7 +8,7 @@ export class SourceDataCollector {
 
     public constructor(config: Config) {
         this.FileDetails = this.GetSourceData(config.Source, config);
-        console.log(`Found ${this.FileDetails.length} entries in ${config.Source}`);
+        // console.log(`Found ${this.FileDetails.length} entries in ${config.Source}`);
     }
 
     private GetSourceData(path: string, config: Config): FileDetails[] {

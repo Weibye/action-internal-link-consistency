@@ -26,5 +26,5 @@ jobs:
           file-types: '["test"]'
           exclude-folders: '["./__tests__/validData/data/ignorefolder"]'
           exclude-files: '["./__tests__/validData/data/should_be_ignored.test"]'
-          targets: '[ { "Path": "./__tests__/validData/ValidToml.toml", "Style": 1 }, { "Path": "./__tests__/validData/ValidReadme.md", "Style": 0 }]'
+          targets: '["./__tests__/validData/ValidToml.toml", "./__tests__/validData/ValidReadme.md"]'
           
