@@ -16,7 +16,6 @@ export class TargetDataCollector {
         const content = readFileSync('./src/SupportedFormats.json', { encoding: 'utf8' });
         this.supportedFiles = JSON.parse(content);
 
-        console.log(this.supportedFiles);
         for (const target of config.Targets) {
             const data = this.GetTargetData(target, config);
             if (data.length >= 0) {
@@ -48,40 +47,10 @@ export class TargetDataCollector {
             if (match.index === undefined) {
                 console.warn('Could not index of match. Something is wrong somewhere');
             } else {
-                console.log(match[0]);
+                // console.log(match[0]);
                 preProcessor.push({ Orig: match[0], Link: match[1], Target: target, Line: GetLineNr(content, match.index) });
             }
         }
-
-        // switch (target.Style) {
-        //     case LinkStyle.Markdown:
-        //         pattern = /^(?!<!--).*\[([^[]+)\]\(([^)]+)\)/gm;
-
-        //         matches = content.matchAll(new RegExp(this.supportedFiles.Formats[0].LinkPattern, 'gm'));
-        //         for (const match of matches) {
-        //             if (match.index === undefined) {
-        //                 console.warn('Could not index of match. Something is wrong somewhere');
-        //             } else {
-        //                 console.log(match[0]);
-        //                 preProcessor.push({ Orig: match[0], Link: match[2], Target: target, Line: GetLineNr(content, match.index) });
-        //             }
-        //         }
-        //         break;
-
-        //     case LinkStyle.TOML_Path_Value:
-        //         pattern = /^(?!#).*path\s=\s"(.*)"$/gm;
-        //         matches = content.matchAll(new RegExp(this.supportedFiles.Formats[1].LinkPattern, 'gm'));
-        //         for (const match of matches) {
-        //             if (match.index === undefined) {
-        //                 console.warn('Could not index of match. Something is wrong somewhere');
-        //             } else {
-        //                 preProcessor.push({ Orig: match[0], Link: match[1], Target: target, Line: GetLineNr(content, match.index) });
-        //             }
-        //         }
-        //         break;
-        //     default:
-        //         throw new Error('No Style defined');
-        // }
 
         for (const data of preProcessor) {
             if (!ExcludeLink(data.Link)) {

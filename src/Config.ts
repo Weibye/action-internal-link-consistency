@@ -79,7 +79,7 @@ export class Config {
     }
 
     /**
-     * ToString
+     * Returns the config in a prettified readable string.
      */
     public ToString(): string {
         let output = '';
@@ -93,29 +93,21 @@ export class Config {
         return output;
     }
 
-    // private PathValidation(path: string): void {
-
-    // }
-
     /**
      * Checks if the path starts with ./
-     */ 
+     */
     private PathStartRelative(path: string): boolean {
         const startOfLine = /^\.\//gm;
-        return (startOfLine.exec(path) !== null);
+        return startOfLine.exec(path) !== null;
     }
 
     /**
      * Checks if the path ends with /
-     */ 
+     */
     private PathEndWithSlash(path: string): boolean {
         const endOfLine = /.*\/$/gm;
-        return (endOfLine.exec(path) !== null);
+        return endOfLine.exec(path) !== null;
     }
-    // private ValidDirPath(path: string): boolean {
-    //     // Start of line
-    //     // and end of line
-    // }
 
     private FileTypeValidation(fileTypes: string[]): void {
         if (fileTypes === null || fileTypes === undefined) {
