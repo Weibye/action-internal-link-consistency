@@ -1,67 +1,104 @@
+import { readFileSync } from 'fs';
 import { Config } from '../Config';
 import { FileDetails } from '../FileDetails';
 import { ExcludeFile } from '../InclusionController';
-import { ITarget, ITargetData } from '../Interfaces';
+import { ITarget, ITargetData, ITargetOutput } from '../Interfaces';
 import { ReadFileFromPath } from '../IoOperations';
-import { LinkStyle } from '../LinkStyle';
-// import { RegExpMatchArray } from 'RegExp'
 
-export function GetTargetData(target: ITarget, config: Config): ITargetData[] {
-    // console.log(`Getting data from: ${target.Path}`);
-    const output: ITargetData[] = [];
+export class TargetDataCollector {
+    public TargetData: ITargetOutput[];
 
-    // Read the contents of the file
-    const content = ReadFileFromPath(target.Path);
-    if (content.length <= 0) return [];
+    private supportedFiles;
 
-    let pattern: RegExp;
-    let matches: IterableIterator<RegExpMatchArray>;
+    public constructor(config: Config) {
+        this.TargetData = [];
 
-    const preProcessor: { Orig: string; Link: string; Target: ITarget; Line: number }[] = [];
+        const content = readFileSync('./src/SupportedFormats.json', { encoding: 'utf8' });
+        this.supportedFiles = JSON.parse(content);
 
-    switch (target.Style) {
-        case LinkStyle.Markdown:
-            pattern = /^(?!<!--).*\[([^[]+)\]\(([^)]+)\)/gm;
-            matches = content.matchAll(pattern);
-            for (const match of matches) {
-                if (match.index === undefined) {
-                    console.warn('Could not index of match. Something is wrong somewhere');
-                } else {
-                    preProcessor.push({ Orig: match[0], Link: match[2], Target: target, Line: GetLineNr(content, match.index) });
-                }
-            }
-            break;
-
-        case LinkStyle.TOML_Path_Value:
-            pattern = /^(?!#).*path\s=\s"(.*)"$/gm;
-            matches = content.matchAll(pattern);
-            for (const match of matches) {
-                if (match.index === undefined) {
-                    console.warn('Could not index of match. Something is wrong somewhere');
-                } else {
-                    preProcessor.push({ Orig: match[0], Link: match[1], Target: target, Line: GetLineNr(content, match.index) });
-                }
-            }
-            break;
-        default:
-            throw new Error('No Style defined');
-    }
-
-    for (const data of preProcessor) {
-        if (!ExcludeLink(data.Link)) {
-            const rootPath = GetRootPath(data.Target.Path, data.Link);
-            if (!ExcludeFile(rootPath, config.ExcludeFiles, config.ExcludeFolders)) {
-                output.push({
-                    Details: new FileDetails(rootPath),
-                    RelativePath: data.Link,
-                    OriginalMatch: data.Orig,
-                    ParentFile: data.Target,
-                    LineNr: data.Line
-                });
+        console.log(this.supportedFiles);
+        for (const target of config.Targets) {
+            const data = this.GetTargetData(target, config);
+            if (data.length >= 0) {
+                console.log(`Found ${data.length} entries in ${target.Path}`);
+                this.TargetData.push({ Target: target.Path, Data: data });
             }
         }
     }
-    return output;
+
+    public static ReadTarget(path: string): string {
+        return readFileSync(path, { encoding: 'utf8' });
+    }
+
+    private GetTargetData(target: ITarget, config: Config): ITargetData[] {
+        // console.log(`Getting data from: ${target.Path}`);
+        const output: ITargetData[] = [];
+
+        // Read the contents of the file
+        const content = ReadFileFromPath(target.Path);
+        if (content.length <= 0) return [];
+
+        // let pattern: RegExp;
+        // let matches: IterableIterator<RegExpMatchArray>;
+
+        const preProcessor: { Orig: string; Link: string; Target: ITarget; Line: number }[] = [];
+
+        const matches = content.matchAll(target.Pattern);
+        for (const match of matches) {
+            if (match.index === undefined) {
+                console.warn('Could not index of match. Something is wrong somewhere');
+            } else {
+                console.log(match[0]);
+                preProcessor.push({ Orig: match[0], Link: match[1], Target: target, Line: GetLineNr(content, match.index) });
+            }
+        }
+
+        // switch (target.Style) {
+        //     case LinkStyle.Markdown:
+        //         pattern = /^(?!<!--).*\[([^[]+)\]\(([^)]+)\)/gm;
+
+        //         matches = content.matchAll(new RegExp(this.supportedFiles.Formats[0].LinkPattern, 'gm'));
+        //         for (const match of matches) {
+        //             if (match.index === undefined) {
+        //                 console.warn('Could not index of match. Something is wrong somewhere');
+        //             } else {
+        //                 console.log(match[0]);
+        //                 preProcessor.push({ Orig: match[0], Link: match[2], Target: target, Line: GetLineNr(content, match.index) });
+        //             }
+        //         }
+        //         break;
+
+        //     case LinkStyle.TOML_Path_Value:
+        //         pattern = /^(?!#).*path\s=\s"(.*)"$/gm;
+        //         matches = content.matchAll(new RegExp(this.supportedFiles.Formats[1].LinkPattern, 'gm'));
+        //         for (const match of matches) {
+        //             if (match.index === undefined) {
+        //                 console.warn('Could not index of match. Something is wrong somewhere');
+        //             } else {
+        //                 preProcessor.push({ Orig: match[0], Link: match[1], Target: target, Line: GetLineNr(content, match.index) });
+        //             }
+        //         }
+        //         break;
+        //     default:
+        //         throw new Error('No Style defined');
+        // }
+
+        for (const data of preProcessor) {
+            if (!ExcludeLink(data.Link)) {
+                const rootPath = GetRootPath(data.Target.Path, data.Link);
+                if (!ExcludeFile(rootPath, config.ExcludeFiles, config.ExcludeFolders)) {
+                    output.push({
+                        Details: new FileDetails(rootPath),
+                        RelativePath: data.Link,
+                        OriginalMatch: data.Orig,
+                        ParentFile: data.Target,
+                        LineNr: data.Line
+                    });
+                }
+            }
+        }
+        return output;
+    }
 }
 
 function ExcludeLink(link: string): boolean {

@@ -1,10 +1,14 @@
 import { FileDetails } from './FileDetails';
-import { LinkStyle } from './LinkStyle';
 
-export interface ITarget {
+interface IPath {
     Path: string;
-    Style: LinkStyle;
 }
+export interface IRegFormat {
+    Extension: string;
+    Pattern: RegExp;
+}
+export interface ITarget extends IPath, IRegFormat {}
+
 export interface ITargetData {
     OriginalMatch: string;
     RelativePath: string;
@@ -19,18 +23,15 @@ export interface ITargetOutput {
     Data: ITargetData[];
 }
 
-export interface IIssue {
-    Path: string;
-}
 // export interface IIssueNotInAny extends IIssue {}
-export interface IIssueNotInAll extends IIssue {
+export interface IIssueNotInAll extends IPath {
     MissingTargets: string[];
 }
-export interface IIssueNotInSource extends IIssue {
+export interface IIssueNotInSource extends IPath {
     InTarget: string;
     Line: number;
 }
-export interface ITargetIssue extends IIssue {
+export interface ITargetIssue extends IPath {
     OriginalMatch: string;
     Target: string;
 }

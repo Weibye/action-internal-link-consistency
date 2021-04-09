@@ -5,11 +5,15 @@ inputs:
   source:
     required: true
     description: 'path to source folder to be scanned, relative to the root of the repo'
-    default: 'examples/'
+    default: './examples/'
+  targets:
+    required: true
+    description: 'Some description'
+    default: '["./examples/README.md", "./Cargo.toml"]'
   file-types:
     required: false
     description: 'TODO'
-    default: '["rs"]'
+    default: '[]'
   exclude-folders:
     required: false
     description: 'TODO'
@@ -18,10 +22,6 @@ inputs:
     required: false
     description: 'TODO'
     default: '[]'
-  targets:
-    required: true
-    description: 'Some description'
-    default: '{ "targets": ["examples/README.md"] }'
 branding:
   icon: 'check-circle'
   color: 'orange'
