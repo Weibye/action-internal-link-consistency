@@ -13,13 +13,6 @@ test('Should be able to collect files from a valid path', async () => {
     expect(data.FileDetails.length).toBeGreaterThan(0);
 });
 
-test('Should not find anything in an empty folder', async () => {
-    const data = new SourceDataCollector(new Config('./__tests__/validData/data/emptyfolder/', []));
-    expect(data).toBeDefined();
-    expect(data.FileDetails).toBeDefined();
-    expect(data.FileDetails.length).toEqual(0);
-});
-
 // File Types
 test('Should collect everything on empty file-types', async () => {
     const fileTypes: string[] = [];

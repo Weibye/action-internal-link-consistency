@@ -1016,7 +1016,7 @@ function run() {
                 core.setFailed('Cross referencing found issues, see output log to fix them');
             }
             else {
-                console.log('All checks passes :D');
+                console.log('✓ All checks passes.');
             }
         }
         catch (error) {

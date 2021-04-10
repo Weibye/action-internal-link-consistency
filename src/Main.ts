@@ -36,7 +36,7 @@ async function run(): Promise<void> {
             output.PrintIssues();
             core.setFailed('Cross referencing found issues, see output log to fix them');
         } else {
-            console.log('All checks passes :D');
+            console.log('✓ All checks passes.');
         }
     } catch (error) {
         core.setFailed(error.message);
