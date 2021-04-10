@@ -1,10 +1,9 @@
 path = "data/00.test"
 path = "data/01.test"
 path = "data/02.test"
-path = "data/subfolder/subfolder/03.test"
-path = "data/subfolder/04.test"
-path = "data/subfolder/05.test"
-path = "data/subfolder/06.test"
+path = "data/subfolderOne/subfolderTwo/03.test"
+path = "data/subfolderOne/04.test"
+path = "data/subfolderOne/05.test"
+path = "data/subfolderOne/06.test"
 
 # path = "data/10.test"
-

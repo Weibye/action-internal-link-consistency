@@ -718,11 +718,11 @@ function GetRootPath(targetPath, filePath) {
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.defaultTargets = exports.defaultExcludeFolders = exports.defaultExcludeFiles = exports.defaultFileTypes = exports.defaultSource = void 0;
-exports.defaultSource = './__tests__/testData/examples/';
-exports.defaultFileTypes = ['rs'];
-exports.defaultExcludeFiles = [];
-exports.defaultExcludeFolders = ['./__tests__/testData/examples/ios'];
-exports.defaultTargets = ['./__tests__/testData/examples/README.md', './__tests__/testData/Cargo.toml'];
+exports.defaultSource = './__tests__/validData/data/';
+exports.defaultFileTypes = ['test'];
+exports.defaultExcludeFiles = ['./__tests__/validData/data/should_be_ignored.test'];
+exports.defaultExcludeFolders = ['./__tests__/validData/data/ignorefolder'];
+exports.defaultTargets = ['./__tests__/validData/ValidToml.toml', './__tests__/validData/ValidReadme.md'];
 
 
 /***/ }),
@@ -916,7 +916,7 @@ class IssueLogger {
         if (targetIssues.length > 0) {
             this.TargetIssueOutput += `Links was found in document(s) but does not point to a valid file:\n`;
             for (const issue of targetIssues) {
-                this.TargetIssueOutput += `\n${this.GetIssueNumber()} Link: ${issue.Path}\n\tDoes not lead to a valid file. Found in document: \n\t${issue.InTarget} : Line: ${issue.Line}\n`;
+                this.TargetIssueOutput += `\n${this.GetIssueNumber()} Link: ${issue.Path}\n\tDoes not lead to a valid file. Found in document: \n\t\t${issue.InTarget} : Line: ${issue.Line}\n`;
             }
             this.TargetIssueOutput += '\nPlease fix any typos in the link, or remove the link from the document(s).';
         }
@@ -936,13 +936,10 @@ class IssueLogger {
         if (this.TargetIssueOutput === '' && this.SourceIssueOutput === '') {
             return;
         }
-        console.error(`▼ ▼ ▼ ▼ ${this.IssueCount} issues needs to be fixed ▼ ▼ ▼`);
-        // console.log('\n');
-        console.error(this.TargetIssueOutput);
-        console.log('\n');
-        console.error(this.SourceIssueOutput);
-        // console.log('\n');
-        console.error('▲ ▲ ▲ ▲ ▲ ▲ ▲ End of issues ▲ ▲ ▲ ▲ ▲ ▲ ▲');
+        console.error(`▼ ▼ ▼ ▼ ${this.IssueCount} issues needs to be fixed ▼ ▼ ▼\
+            \n${this.TargetIssueOutput}\
+            \n\n${this.SourceIssueOutput}\
+            \n▲ ▲ ▲ ▲ ▲ ▲ ▲ End of issues ▲ ▲ ▲ ▲ ▲ ▲ ▲`);
     }
     GetIssueNumber() {
         return `[${this.issueIter++}/${this.IssueCount}] =>`;
