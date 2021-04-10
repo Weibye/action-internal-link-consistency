@@ -639,14 +639,11 @@ class TargetDataCollector {
         for (const target of config.Targets) {
             const data = this.GetTargetData(target, config);
             if (data.length >= 0) {
-                console.log(`Found ${data.length} entries in ${target.Path}`);
+                // console.log(`Found ${data.length} entries in ${target.Path}`);
                 this.TargetData.push({ Target: target.Path, Data: data });
             }
         }
     }
-    // public static ReadTarget(path: string): string {
-    //     return readFileSync(path, { encoding: 'utf8' });
-    // }
     GetTargetData(target, config) {
         // console.log(`Getting data from: ${target.Path}`);
         const output = [];
@@ -654,8 +651,6 @@ class TargetDataCollector {
         const content = IoOperations_1.ReadFileFromPath(target.Path);
         if (content.length <= 0)
             return [];
-        // let pattern: RegExp;
-        // let matches: IterableIterator<RegExpMatchArray>;
         const preProcessor = [];
         const matches = content.matchAll(target.Pattern);
         for (const match of matches) {
@@ -663,7 +658,8 @@ class TargetDataCollector {
                 console.warn('Could not index of match. Something is wrong somewhere');
             }
             else {
-                // console.log(match[0]);
+                // TODO: There may be an issue with the markdown pattern, not collecting all links in document (early in document)
+                // console.log(`Orig: ${match[0]} | Link: ${match[1]}`);
                 preProcessor.push({ Orig: match[0], Link: match[1], Target: target, Line: GetLineNr(content, match.index) });
             }
         }
@@ -913,36 +909,43 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.IssueLogger = void 0;
 class IssueLogger {
     constructor(sourceIssues, targetIssues) {
+        this.issueIter = 1;
+        this.IssueCount = sourceIssues.length + targetIssues.length;
         this.TargetIssueOutput = '';
         this.SourceIssueOutput = '';
+        if (targetIssues.length > 0) {
+            this.TargetIssueOutput += `Links was found in document(s) but does not point to a valid file:\n`;
+            for (const issue of targetIssues) {
+                this.TargetIssueOutput += `\n${this.GetIssueNumber()} Link: ${issue.Path}\n\tDoes not lead to a valid file. Found in document: \n\t${issue.InTarget} : Line: ${issue.Line}\n`;
+            }
+            this.TargetIssueOutput += '\nPlease fix any typos in the link, or remove the link from the document(s).';
+        }
         if (sourceIssues.length > 0) {
             this.SourceIssueOutput += `Following files in folders was not found linked in document(s):\n`;
             for (const issue of sourceIssues) {
-                this.SourceIssueOutput += `\n=>\tFile: ${issue.Path} \n\tIs missing from following document(s):`;
+                this.SourceIssueOutput += `\n${this.GetIssueNumber()} File: ${issue.Path} \n\tIs missing from following document(s):`;
                 for (const missingTarget of issue.MissingTargets) {
                     this.SourceIssueOutput += `\n\t\t${missingTarget}`;
                 }
                 this.SourceIssueOutput += `\n`;
             }
-            this.SourceIssueOutput += `\nPlease add them to the documents listed or remove them from folders\n`;
-        }
-        if (targetIssues.length > 0) {
-            this.TargetIssueOutput += `Links to files was found in document(s) but file does not exist in folders:\n`;
-            for (const issue of targetIssues) {
-                this.TargetIssueOutput += `\n=>\tLink: ${issue.Path}\n\tDoes not lead to a valid file. Found in document: \n\t${issue.InTarget} : Line: ${issue.Line}\n`;
-            }
-            this.TargetIssueOutput += '\nPlease remove them from the target or make sure the link points to the correct file.\n';
-            this.TargetIssueOutput += 'Note: This often might indicate a typo in the link.\n';
+            this.SourceIssueOutput += `\nPlease add them to the documents listed or remove them from folders.`;
         }
     }
     PrintIssues() {
         if (this.TargetIssueOutput === '' && this.SourceIssueOutput === '') {
             return;
         }
-        console.error('▼ ▼ ▼ ▼ These issues needs fixing ▼ ▼ ▼');
-        console.error(this.SourceIssueOutput);
+        console.error(`▼ ▼ ▼ ▼ ${this.IssueCount} issues needs to be fixed ▼ ▼ ▼`);
+        // console.log('\n');
         console.error(this.TargetIssueOutput);
-        console.error('▲ ▲ ▲ ▲ ▲ ▲ ▲ Issues end  ▲ ▲ ▲ ▲ ▲ ▲ ▲');
+        console.log('\n');
+        console.error(this.SourceIssueOutput);
+        // console.log('\n');
+        console.error('▲ ▲ ▲ ▲ ▲ ▲ ▲ End of issues ▲ ▲ ▲ ▲ ▲ ▲ ▲');
+    }
+    GetIssueNumber() {
+        return `[${this.issueIter++}/${this.IssueCount}] =>`;
     }
 }
 exports.IssueLogger = IssueLogger;
@@ -994,26 +997,29 @@ const IssueLogger_1 = __nccwpck_require__(686);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            console.log('======= Starting Job =======');
+            console.log('======= Running internal link consistency check =======');
             const config = new Setup_1.Setup().Config;
             console.log(`Running job with config: \n${config.ToString()}`);
-            console.log('======= Getting source data =======');
+            // console.log('======= Getting source data =======');
             const sourceData = new SourceData_1.SourceDataCollector(config).FileDetails;
             if (sourceData.length <= 0) {
                 core.setFailed('Found no entries in source');
             }
-            console.log('======= Getting target data =======');
+            // console.log('======= Getting target data =======');
             const targetData = new TargetData_1.TargetDataCollector(config).TargetData;
             if (targetData.length <= 0) {
                 core.setFailed('Found no entries in target(s)');
             }
-            console.log('======= Cross referencing issues =======');
+            // console.log('======= Cross referencing issues =======');
             const crossChecker = new CrossReferencer_1.CrossReferencer(sourceData, targetData);
             if (crossChecker.HasIssues) {
                 const output = new IssueLogger_1.IssueLogger(crossChecker.MissingFromTargets, crossChecker.MissingFromSource);
                 // core.setOutput('SourceIssues', output.SourceIssueOutput);
                 output.PrintIssues();
                 core.setFailed('Cross referencing found issues, see output log to fix them');
+            }
+            else {
+                console.log('All checks passes :D');
             }
         }
         catch (error) {

@@ -14,15 +14,11 @@ export class TargetDataCollector {
         for (const target of config.Targets) {
             const data = this.GetTargetData(target, config);
             if (data.length >= 0) {
-                console.log(`Found ${data.length} entries in ${target.Path}`);
+                // console.log(`Found ${data.length} entries in ${target.Path}`);
                 this.TargetData.push({ Target: target.Path, Data: data });
             }
         }
     }
-
-    // public static ReadTarget(path: string): string {
-    //     return readFileSync(path, { encoding: 'utf8' });
-    // }
 
     private GetTargetData(target: ITarget, config: Config): ITargetData[] {
         // console.log(`Getting data from: ${target.Path}`);
@@ -32,9 +28,6 @@ export class TargetDataCollector {
         const content = ReadFileFromPath(target.Path);
         if (content.length <= 0) return [];
 
-        // let pattern: RegExp;
-        // let matches: IterableIterator<RegExpMatchArray>;
-
         const preProcessor: { Orig: string; Link: string; Target: ITarget; Line: number }[] = [];
 
         const matches = content.matchAll(target.Pattern);
@@ -42,7 +35,8 @@ export class TargetDataCollector {
             if (match.index === undefined) {
                 console.warn('Could not index of match. Something is wrong somewhere');
             } else {
-                // console.log(match[0]);
+                // TODO: There may be an issue with the markdown pattern, not collecting all links in document (early in document)
+                // console.log(`Orig: ${match[0]} | Link: ${match[1]}`);
                 preProcessor.push({ Orig: match[0], Link: match[1], Target: target, Line: GetLineNr(content, match.index) });
             }
         }
