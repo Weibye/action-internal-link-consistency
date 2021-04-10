@@ -1013,7 +1013,7 @@ function run() {
                 const output = new IssueLogger_1.IssueLogger(crossChecker.MissingFromTargets, crossChecker.MissingFromSource);
                 // core.setOutput('SourceIssues', output.SourceIssueOutput);
                 output.PrintIssues();
-                core.setFailed('Cross referencing found issues, see output log to fix them');
+                core.setFailed('✗ Cross referencing found issues, see output log to fix them');
             }
             else {
                 console.log('✓ All checks passes.');

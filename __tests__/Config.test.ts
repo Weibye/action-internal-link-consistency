@@ -1,8 +1,5 @@
 import { Config } from '../src/Config';
 
-/*
- *
- */
 // CONFIG
 test('Valid config should be valid', async () => {
     const source = './__tests__/validData/data/';
@@ -23,9 +20,13 @@ test('Valid config should be valid', async () => {
     expect(configObject.FileTypes).toEqual(fileTypes);
     expect(configObject.ExcludeFolders).toEqual(excludeFolders);
     expect(configObject.ExcludeFiles).toEqual(excludeFiles);
+    for (const target of configObject.Targets) {
+        expect(target.Path).toBeDefined();
+        expect(target.Extension).toBeDefined();
+        expect(target.Pattern).toBeDefined();
+        expect(targets.some(e => e === target.Path)).toBeTruthy();
+    }
     // This is not true
-    // expect(configObject.Targets).toEqual(targets);
-
     const optionalConf = new Config(source, targets);
     expect(optionalConf).toBeDefined();
     expect(optionalConf.Source).toBeDefined();
@@ -35,7 +36,12 @@ test('Valid config should be valid', async () => {
     expect(optionalConf.Targets).toBeDefined();
 
     expect(optionalConf.Source).toEqual(source);
-    // expect(optionalConf.Targets).toEqual(targets);
+    for (const target of optionalConf.Targets) {
+        expect(target.Path).toBeDefined();
+        expect(target.Extension).toBeDefined();
+        expect(target.Pattern).toBeDefined();
+        expect(targets.some(e => e === target.Path)).toBeTruthy();
+    }
     expect(optionalConf.FileTypes).toEqual([]);
     expect(optionalConf.ExcludeFolders).toEqual([]);
     expect(optionalConf.ExcludeFiles).toEqual([]);
@@ -45,8 +51,7 @@ test('Valid config should be valid', async () => {
 test('Source path must be a valid string', async () => {
     expect(() => new Config('', [])).toThrowError();
 });
-
-test('source path must start with ./', async () => {
+test('Source path must start with ./', async () => {
     const source = './__tests__/validData/data/';
     const notValidSource: string = 'path/';
     const configObject = new Config(source, []);
@@ -54,8 +59,7 @@ test('source path must start with ./', async () => {
     expect(configObject).toBeDefined();
     expect(() => new Config(notValidSource, [])).toThrowError();
 });
-
-test('source path must end with /', async () => {
+test('Source path must end with /', async () => {
     const source = './__tests__/validData/data/';
     const notValidSource: string = './path';
 
@@ -64,13 +68,33 @@ test('source path must end with /', async () => {
     expect(configObject).toBeDefined();
     expect(() => new Config(notValidSource, [])).toThrowError();
 });
+test('Source path must exist', async () => {
+    expect(() => new Config('./not_existing/', [])).toThrowError();
+});
+
+// TARGETS
+test('Target must be a valid string', async () => {
+    expect(() => new Config('./__tests__/validData/data/', [''])).toThrowError();
+});
+test('Target path must start with ./', async () => {
+    expect(() => new Config('./__tests__/validData/data/', ['./__tests__/validData/ValidReadme.md'])).toBeDefined();
+    expect(() => new Config('./__tests__/validData/data/', ['__tests__/validData/ValidReadme.md'])).toThrowError();
+});
+test('Target path must not end with /', async () => {
+    expect(() => new Config('./__tests__/validData/data/', ['./__tests__/validData/ValidReadme.md'])).toBeDefined();
+    expect(() => new Config('./__tests__/validData/data/', ['./__tests__/validData/ValidReadme.md/'])).toThrowError();
+});
+test('Target must exist', async () => {
+    expect(() => new Config('./__tests__/validData/data/', ['./__tests__/validData/ValidReadme.md'])).toBeDefined();
+    expect(() => new Config('./__tests__/validData/data/', ['./__tests__/validData/NonExisting.md'])).toThrowError();
+});
+test('Target must be supported file type', async () => {
+    expect(() => new Config('./__tests__/validData/data/', ['./__tests__/validData/ValidReadme.md'])).toBeDefined();
+    expect(() => new Config('./__tests__/validData/data/', ['./__tests__/validData/ValidReadme.notsupported'])).toThrowError();
+});
 
 // FILE TYPES
 
 // EXCLUDE FOLDERS
 
 // EXCLUDE FILES
-
-// TARGETS
-test('Target must be a valid path', async () => {});
-test('Target should throw if not a supported filetype', async () => {});

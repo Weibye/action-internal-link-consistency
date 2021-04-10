@@ -34,7 +34,7 @@ async function run(): Promise<void> {
             const output = new IssueLogger(crossChecker.MissingFromTargets, crossChecker.MissingFromSource);
             // core.setOutput('SourceIssues', output.SourceIssueOutput);
             output.PrintIssues();
-            core.setFailed('Cross referencing found issues, see output log to fix them');
+            core.setFailed('✗ Cross referencing found issues, see output log to fix them');
         } else {
             console.log('✓ All checks passes.');
         }
